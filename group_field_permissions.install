@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Installer functions for the Group Field Permissions module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function group_field_permissions_install() {
+  $field_permissions_weight = db_select('system', 'system')
+    ->fields('system', array('weight'))
+    ->condition('name', 'field_permissions', '=')
+    ->execute()
+    ->fetchField();
+
+  // Set a larger weight for the module.
+  db_update('system')
+    ->fields(array('weight' => $field_permissions_weight - 1))
+    ->condition('name', 'group_field_permissions')
+    ->execute();
+}
