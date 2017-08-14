@@ -70,7 +70,8 @@ function group_field_permissions_group_field_permissions_field_access($op, $fiel
     return;
   }
 
-  if ($field['field_permissions']['type'] == FIELD_PERMISSIONS_CUSTOM) {
+  if (isset($field['field_permissions']['type']) &&
+    $field['field_permissions']['type'] == FIELD_PERMISSIONS_CUSTOM) {
     if ($op === 'view') {
       return _group_field_permissions_field_view_access($field['field_name'], $entity_type, $entity, $account);
     }
