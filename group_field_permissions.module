@@ -40,9 +40,7 @@ function group_field_permissions_field_access($operation, $field, $entity_type, 
   $modules = module_implements('group_field_permissions_field_access');
 
   foreach ($modules as $value) {
-    // Invoke Field Access Hook.
-    //
-    // Invoke the hook, saving an implementing module's return value in a
+    // Invoke field_access hook, saving an implementing module's return value in a
     // key/value collection.
     $function_name = $value . '_group_field_permissions_field_access';
     $grants[$value] = $function_name($operation, $field, $entity_type, $entity, $account);
@@ -51,16 +49,12 @@ function group_field_permissions_field_access($operation, $field, $entity_type, 
   $modules = module_implements('group_field_permissions_field_access_alter');
 
   foreach ($modules as $value) {
-    // Invoke Field Access Alter Hook.
-    //
-    // Invoke the hook, giving a chance for an implementing module to alter
+    // Invoke field_access_alter hook, giving a chance for an implementing module to alter
     // the collection of grants.
     $function_name = $value . '_group_field_permissions_field_access_alter';
     $function_name($grants, $operation, $field, $entity_type, $entity, $account);
   }
 
-  // Return.
-  //
   // Field access is restrictive. If a single module denied access, then deny
   // access. Otherwise, grant access.
   $is_granted = in_array(FALSE, $grants, TRUE) ? FALSE : TRUE;
@@ -72,7 +66,7 @@ function group_field_permissions_field_access($operation, $field, $entity_type, 
  * Implements hook_group_field_permissions_field_access().
  */
 function group_field_permissions_group_field_permissions_field_access($op, $field, $entity_type, $entity, $account) {
-  if ($entity_type !== 'group') {
+  if ($entity_type !== 'group' || !$entity) {
     return;
   }
 
@@ -136,59 +130,55 @@ function group_field_permissions_module_implements_alter(&$implementations, $hoo
  * Implements hook_field_access('view').
  */
 function _group_field_permissions_field_view_access($field_name, $entity_type, $entity, $account) {
-  if ($entity) {
-    // Check if user has access to view this field in any entity.
-    if (group_access('view ' . $field_name, $entity, $account)) {
-      return TRUE;
-    }
-
-    // If the user has permission to view entities that they own, return TRUE if
-    // they own this entity or FALSE if they don't.
-    if (group_access('view own ' . $field_name, $entity, $account)) {
-      return _field_permissions_entity_is_owned_by_account($entity, $account);
-    }
-
-    return FALSE;
+  // Check if user has access to view this field in any entity.
+  if (group_access('view ' . $field_name, $entity, $account)) {
+    return TRUE;
   }
+
+  // If the user has permission to view entities that they own, return TRUE if
+  // they own this entity or FALSE if they don't.
+  if (group_access('view own ' . $field_name, $entity, $account)) {
+    return _field_permissions_entity_is_owned_by_account($entity, $account);
+  }
+
+  return FALSE;
 }
 
 /**
  * Implements hook_field_access('edit').
  */
 function _group_field_permissions_field_edit_access($field_name, $entity_type, $entity, $account) {
-  if ($entity) {
-    // If this is a new entity, check if the user has access to edit the field
-    // on entity creation.
-    if (isset($entity->is_new)) {
-      // Some entities provide an "is_new" property. If that is present, respect
-      // whatever it's set to.
-      $is_new = $entity->is_new;
-    }
-    else {
-      // Otherwise, try to find out if the entity is new by checking its ID.
-      // Note that checking empty() rather than !isset() is important here, to
-      // deal with the case of entities that store "0" as their ID while the
-      // final entity is in the process of being created (user accounts are a
-      // good example of this).
-      list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
-      $is_new = empty($id);
-    }
-
-    if ($is_new) {
-      return group_access('create ' . $field_name, $entity, $account);
-    }
-
-    // Check if user has access to edit this field in any entity.
-    if (group_access('edit ' . $field_name, $entity, $account)) {
-      return TRUE;
-    }
-
-    // If the user has permission to edit entities that they own, return TRUE if
-    // they own this entity or FALSE if they don't.
-    if (group_access('edit own ' . $field_name, $entity, $account)) {
-      return _field_permissions_entity_is_owned_by_account($entity, $account);
-    }
-
-    return FALSE;
+  // If this is a new entity, check if the user has access to edit the field
+  // on entity creation.
+  if (isset($entity->is_new)) {
+    // Some entities provide an "is_new" property. If that is present, respect
+    // whatever it's set to.
+    $is_new = $entity->is_new;
   }
+  else {
+    // Otherwise, try to find out if the entity is new by checking its ID.
+    // Note that checking empty() rather than !isset() is important here, to
+    // deal with the case of entities that store "0" as their ID while the
+    // final entity is in the process of being created (user accounts are a
+    // good example of this).
+    list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+    $is_new = empty($id);
+  }
+
+  if ($is_new) {
+    return group_access('create ' . $field_name, $entity, $account);
+  }
+
+  // Check if user has access to edit this field in any entity.
+  if (group_access('edit ' . $field_name, $entity, $account)) {
+    return TRUE;
+  }
+
+  // If the user has permission to edit entities that they own, return TRUE if
+  // they own this entity or FALSE if they don't.
+  if (group_access('edit own ' . $field_name, $entity, $account)) {
+    return _field_permissions_entity_is_owned_by_account($entity, $account);
+  }
+
+  return FALSE;
 }
